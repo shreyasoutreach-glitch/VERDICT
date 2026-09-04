@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://verdict-ie3g.onrender.com/api/:path*"
-    }
-  ]
-}

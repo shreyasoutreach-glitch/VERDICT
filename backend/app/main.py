@@ -14,19 +14,9 @@ app = FastAPI(title="VERIDICT", description="Cross-system truth verification for
 
 import os
 
-frontend_urls = os.environ.get("FRONTEND_URL", "").split(",")
-allow_origins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"]
-for url in frontend_urls:
-    if url.strip():
-        allow_origins.append(url.strip())
-
-# If the user explicitly sets FRONTEND_URL=* (e.g. for a preview deployment where the exact domain isn't known yet)
-if "*" in allow_origins:
-    allow_origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
