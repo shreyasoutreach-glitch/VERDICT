@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { height: 100%; }
+body {
+  font-feature-settings: "tnum" 1, "kern" 1;
+  /*
+   * Document / ledger texture:
+   * Very faint horizontal rules evoke ledger paper.
+   * A barely-visible crosshatch suggests engraved vellum.
+   * Keep opacity extremely low — the surface itself is the texture.
+   */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 47px,
+      rgba(200, 168, 76, 0.04) 47px,
+      rgba(200, 168, 76, 0.04) 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 95px,
+      rgba(200, 168, 76, 0.02) 95px,
+      rgba(200, 168, 76, 0.02) 96px
+    );
+  background-size: 96px 48px;
+}
+
+::selection { background: rgba(201, 168, 76, 0.35); color: #F0EAD6; }
+
+/* ── Status change flash (gold tint — institutional flash, not neon) ── */
+@keyframes flash-update {
+  0%   { background-color: rgba(201, 168, 76, 0.12); }
+  100% { background-color: transparent; }
+}
+.flash-update { animation: flash-update 1.2s ease-out; }
+
+/* ── SVG line drawing (used in ConnectorReveal) ── */
+@keyframes draw-line {
+  from { stroke-dashoffset: 240; }
+  to   { stroke-dashoffset: 0; }
+}
+.draw-line { stroke-dasharray: 240; animation: draw-line 0.8s ease-out forwards; }
+
+/* ── Connector drawing (contradiction reveal) ── */
+@keyframes draw-connector {
+  from { stroke-dashoffset: 200; }
+  to   { stroke-dashoffset: 0; }
+}
+.draw-connector { stroke-dasharray: 200; animation: draw-connector 0.9s ease-out forwards; }
+
+/* ── Staggered card entrance ── */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger > * {
+  opacity: 0;
+  animation: stagger-in 0.35s ease-out forwards;
+}
+.stagger > *:nth-child(1)  { animation-delay: 0.04s; }
+.stagger > *:nth-child(2)  { animation-delay: 0.08s; }
+.stagger > *:nth-child(3)  { animation-delay: 0.12s; }
+.stagger > *:nth-child(4)  { animation-delay: 0.16s; }
+.stagger > *:nth-child(5)  { animation-delay: 0.20s; }
+.stagger > *:nth-child(6)  { animation-delay: 0.24s; }
+.stagger > *:nth-child(7)  { animation-delay: 0.28s; }
+.stagger > *:nth-child(8)  { animation-delay: 0.32s; }
+.stagger > *:nth-child(9)  { animation-delay: 0.36s; }
+.stagger > *:nth-child(10) { animation-delay: 0.40s; }
+.stagger > *:nth-child(n+11) { animation-delay: 0.44s; }
+
+/* ── Chaos mutation flash (vermillion — error/mutation) ── */
+@keyframes mutation-flash {
+  0%   { background-color: rgba(201, 64, 48, 0.14); }
+  100% { background-color: transparent; }
+}
+.mutation-flash { animation: mutation-flash 1.3s ease-out; }
+
+/* ── Rule dividers (engraved style) ── */
+.rule-gold {
+  border-color: rgba(201, 168, 76, 0.25);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .stagger > * { opacity: 1 !important; animation: none !important; }
+}
