@@ -14,9 +14,10 @@ app = FastAPI(title="VERIDICT", description="Cross-system truth verification for
 
 import os
 
+origins = os.getenv("FRONTEND_URL", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -228,9 +229,9 @@ def run_reconciliation():
 def get_latest_batch():
     with db.get_conn() as conn:
         row = conn.execute('SELECT * FROM reconciliation_batches ORDER BY created_at DESC LIMIT 1').fetchone()
-    if not row:
-        return None
-    return db.row_to_dict(row)
+        if not row:
+            return None
+        return db.row_to_dict(row)
 
 @app.get('/api/reconciliation/records')
 def get_reconciliation_records(batch_id: str = None):
@@ -238,10 +239,11 @@ def get_reconciliation_records(batch_id: str = None):
         if not batch_id:
             batch = conn.execute('SELECT batch_id FROM reconciliation_batches ORDER BY created_at DESC LIMIT 1').fetchone()
             if not batch:
-                return []
+                return {"benchmark_size": 0, "records": []}
             batch_id = batch[0]
         rows = conn.execute('SELECT * FROM reconciliation_records WHERE batch_id = ?', (batch_id,)).fetchall()
-    return [db.row_to_dict(r) for r in rows]
+    records = [db.row_to_dict(r) for r in rows]
+    return {"benchmark_size": len(records), "records": records}
 
 @app.get('/api/reconciliation/exceptions')
 def get_reconciliation_exceptions(batch_id: str = None):
@@ -261,20 +263,17 @@ def inject_reconciliation_chaos(mutation_type: str):
         if not row:
             raise HTTPException(status_code=400, detail='No matching records available to mutate')
         t_id = row[0]
-        
         if mutation_type == 'amount_mismatch':
             conn.execute('UPDATE tally_ledger SET amount = amount + 1500 WHERE entry_id = ?', (t_id,))
-            conn.commit()
         elif mutation_type == 'delete':
             conn.execute('DELETE FROM tally_ledger WHERE entry_id = ?', (t_id,))
-            conn.commit()
         elif mutation_type == 'duplicate':
             orig = db.row_to_dict(conn.execute('SELECT * FROM tally_ledger WHERE entry_id = ?', (t_id,)).fetchone())
             conn.execute('INSERT INTO tally_ledger (entry_id, order_id, entry_type, amount, entry_date) VALUES (?, ?, ?, ?, ?)',
                          (orig['entry_id'] + '-DUP', orig['order_id'], orig['entry_type'], orig['amount'], orig['entry_date']))
-            conn.commit()
         elif mutation_type == 'date_mismatch':
             conn.execute("UPDATE tally_ledger SET entry_date = datetime(entry_date, '+10 days') WHERE entry_id = ?", (t_id,))
-            conn.commit()
-            
-        return {'mutated': True, 'target': t_id}
+        else:
+            raise HTTPException(status_code=400, detail='Unsupported mutation type')
+        conn.commit()
+    return {'mutated': True, 'target': t_id}
