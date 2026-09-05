@@ -10,12 +10,20 @@ export default function ChaosLabPage() {
   const [result, setResult] = useState<{ steps: string[], new_status: Status } | null>(null);
 
   const loadDisputes = useCallback(async () => {
-    const data = await api.listDisputes();
-    setDisputes(data.filter(d => d.status === 'CLEARED'));
+    try {
+      const data = await api.listDisputes();
+      if (Array.isArray(data)) {
+        setDisputes(data.filter(d => d?.status === 'CLEARED'));
+      }
+    } catch (err) {
+      console.error('Failed to load disputes for Chaos Lab:', err);
+    }
   }, []);
 
   useEffect(() => {
     loadDisputes();
+    const interval = setInterval(loadDisputes, 2000);
+    return () => clearInterval(interval);
   }, [loadDisputes]);
 
   const handleInject = async () => {
@@ -164,7 +172,32 @@ export default function ChaosLabPage() {
         </div>
       )}
 
-      <div>
+      <div className="pt-8 border-t border-line">
+        <div className="text-[10px] font-mono uppercase tracking-widest text-dim mb-3">BREAK THE BOOKS (RECONCILIATION)</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { id: 'amount_mismatch', label: 'MUTATE AMOUNT' },
+            { id: 'date_mismatch', label: 'SHIFT DATE' },
+            { id: 'delete', label: 'DELETE RECORD' },
+            { id: 'duplicate', label: 'DUPLICATE RECORD' }
+          ].map(mut => (
+            <button
+              key={mut.id}
+              onClick={async () => {
+                await api.injectReconciliationChaos(mut.id);
+                alert('Ledger mutated! Run reconciliation to see the effect.');
+              }}
+              className={`border border-line2 rounded p-3 text-center transition-colors cursor-pointer bg-base hover:border-blocked hover:bg-blocked/5`}
+            >
+              <div className={`font-mono text-xs uppercase tracking-wide text-ink`}>
+                {mut.label}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-8">
         <button
           onClick={handleReset}
           className="border border-line bg-panel text-muted font-mono text-xs uppercase tracking-wide px-4 py-2 rounded hover:text-ink hover:border-line2"

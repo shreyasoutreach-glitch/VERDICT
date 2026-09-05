@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+code = """import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type Evaluation } from '../lib/api'
 
@@ -23,7 +23,7 @@ export default function EvaluationPage() {
 
   const { dataset, confusion_matrix, metrics, performance, status_counts, missed_cases, reconciliation } = ev
 
-  const pct = (n: number) => typeof n === 'number' ? `${(n * 100).toFixed(1)}%` : '—'
+  const pct = (n: number) => typeof n === 'number' ? `${(n * 100).toFixed(1)}%` : 'â€”'
 
   const humanContextCount = status_counts['HUMAN_CONTEXT'] || 0
   const humanContextExpected = dataset.total - dataset.contradictory - dataset.clean + (dataset.total - dataset.contradictory - (confusion_matrix.true_negative + confusion_matrix.false_positive))
@@ -141,7 +141,7 @@ export default function EvaluationPage() {
             <div className="border border-line bg-panel p-4 rounded">
               <div className="text-[10px] font-mono text-dim uppercase mb-1">ROUTING ACCURACY</div>
               <div className="text-2xl font-mono text-ink">
-                {metrics.human_context_routing_accuracy !== null ? pct(metrics.human_context_routing_accuracy) : '—'}
+                {metrics.human_context_routing_accuracy !== null ? pct(metrics.human_context_routing_accuracy) : 'â€”'}
               </div>
             </div>
           </div>
@@ -172,3 +172,7 @@ export default function EvaluationPage() {
     </div>
   )
 }
+"""
+
+with open('frontend/src/pages/EvaluationPage.tsx', 'w') as f:
+    f.write(code)

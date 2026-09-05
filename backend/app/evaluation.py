@@ -65,6 +65,70 @@ def run_evaluation() -> dict:
     for r in rows:
         status_counts[r["status"]] = status_counts.get(r["status"], 0) + 1
 
+    # ==========================================
+    # RECONCILIATION EVALUATION
+    # ==========================================
+    with db.get_conn() as conn:
+        latest_batch = conn.execute("SELECT * FROM reconciliation_batches ORDER BY created_at DESC LIMIT 1").fetchone()
+        
+        recon_metrics = None
+        if latest_batch:
+            latest_batch = db.row_to_dict(latest_batch)
+            b_id = latest_batch["batch_id"]
+            
+            # Fetch ground truth and actual predictions
+            rec_rows = conn.execute("SELECT source_record_id, match_status, match_type FROM reconciliation_records WHERE batch_id = ?", (b_id,)).fetchall()
+            gt_rows = conn.execute("SELECT source_record_id, true_target_record_id, expected_status, scenario_type FROM reconciliation_ground_truth").fetchall()
+            
+            gt_map = {r["source_record_id"]: db.row_to_dict(r) for r in gt_rows}
+            rec_map = {r["source_record_id"]: db.row_to_dict(r) for r in rec_rows}
+            
+            rtp = rfp = rtn = rfn = 0
+            
+            for s_id, gt in gt_map.items():
+                pred = rec_map.get(s_id)
+                if not pred:
+                    continue
+                
+                # We define "Positive" as an EXCEPTION (Mismatch, Missing, Duplicate, etc.)
+                # and "Negative" as RESOLVED (Matched, Matched after normalization)
+                gt_is_exception = gt["expected_status"] not in ("MATCHED", "MATCHED_AFTER_NORMALIZATION")
+                pred_is_exception = pred["match_status"] not in ("MATCHED", "MATCHED_AFTER_NORMALIZATION")
+                
+                if gt_is_exception and pred_is_exception:
+                    rtp += 1
+                elif gt_is_exception and not pred_is_exception:
+                    rfn += 1
+                elif not gt_is_exception and pred_is_exception:
+                    rfp += 1
+                else:
+                    rtn += 1
+                    
+            r_precision = rtp / (rtp + rfp) if (rtp + rfp) else 0.0
+            r_recall = rtp / (rtp + rfn) if (rtp + rfn) else 0.0
+            r_f1 = (2 * r_precision * r_recall / (r_precision + r_recall)) if (r_precision + r_recall) else 0.0
+            
+            recon_metrics = {
+                "batch_id": b_id,
+                "total_records": latest_batch["total_records"],
+                "resolved_count": latest_batch["resolved_count"],
+                "exact_match_count": latest_batch["exact_match_count"],
+                "ambiguous_count": latest_batch["ambiguous_count"],
+                "mismatch_count": latest_batch["mismatch_count"],
+                "missing_count": latest_batch["missing_count"],
+                "duplicate_count": latest_batch["duplicate_count"],
+                "unresolved_count": latest_batch["unresolved_count"],
+                "resolution_rate": latest_batch["resolution_rate"],
+                "exact_match_rate": latest_batch["exact_match_rate"],
+                "processing_time_ms": latest_batch["processing_time_ms"],
+                "throughput": round(latest_batch["total_records"] / (latest_batch["processing_time_ms"] / 1000.0), 1) if latest_batch["processing_time_ms"] > 0 else 0,
+                "precision": round(r_precision, 4),
+                "recall": round(r_recall, 4),
+                "f1": round(r_f1, 4),
+                "false_positives": rfp,
+                "false_negatives": rfn
+            }
+
     return {
         "dataset": {"total": total, "contradictory": sum(1 for r in rows if r["ground_truth_contradiction"]),
                      "clean": sum(1 for r in rows if not r["ground_truth_contradiction"])},
@@ -81,4 +145,5 @@ def run_evaluation() -> dict:
         "missed_cases": missed,
         "performance": {"seconds": round(elapsed, 4),
                          "disputes_per_second": round(total / elapsed, 1) if elapsed > 0 else None},
+        "reconciliation": recon_metrics
     }

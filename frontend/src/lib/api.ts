@@ -129,5 +129,10 @@ export const api = {
     req<{ attestation_id: string; recorded: boolean }>('/api/human-attestation', {
       method: 'POST', body: JSON.stringify(body),
     }),
-  getEvaluation: () => req<Evaluation>('/api/evaluation'),
+  getEvaluation: () => req<any>('/api/evaluation'),
+  runReconciliation: () => req<{ batch_id: string }>('/api/reconcile', { method: 'POST' }),
+  getLatestBatch: () => req<any>('/api/reconciliation/latest'),
+  getReconciliationRecords: (batch_id?: string) => req<any[]>(`/api/reconciliation/records${batch_id ? '?batch_id='+batch_id : ''}`),
+  getReconciliationExceptions: (batch_id?: string) => req<any[]>(`/api/reconciliation/exceptions${batch_id ? '?batch_id='+batch_id : ''}`),
+  injectReconciliationChaos: (mutationType: string) => req<any>(`/api/chaos/reconciliation/${mutationType}`, { method: 'POST' }),
 }

@@ -86,7 +86,63 @@ CREATE INDEX IF NOT EXISTS idx_ledger_order ON tally_ledger(order_id);
 -- ============================================================
 -- VERIDICT's own state: disputes, evidence, claims, verdicts, audit
 -- ============================================================
-CREATE TABLE IF NOT EXISTS disputes (
+
+-- SYSTEM 5: Reconciliation
+CREATE TABLE IF NOT EXISTS reconciliation_batches (
+    batch_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    total_records INTEGER NOT NULL,
+    resolved_count INTEGER NOT NULL,
+    exact_match_count INTEGER NOT NULL,
+    normalized_match_count INTEGER NOT NULL,
+    ambiguous_count INTEGER NOT NULL,
+    mismatch_count INTEGER NOT NULL,
+    missing_count INTEGER NOT NULL,
+    duplicate_count INTEGER NOT NULL,
+    unresolved_count INTEGER NOT NULL,
+    resolution_rate REAL NOT NULL,
+    exact_match_rate REAL NOT NULL,
+    processing_time_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reconciliation_records (
+    reconciliation_id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    source_system TEXT NOT NULL,
+    source_record_id TEXT NOT NULL,
+    target_system TEXT NOT NULL,
+    target_record_id TEXT,
+    match_status TEXT NOT NULL,
+    match_type TEXT NOT NULL,
+    confidence REAL,
+    amount_difference REAL,
+    date_difference INTEGER,
+    reason TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reconciliation_exceptions (
+    exception_id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    source_record_id TEXT NOT NULL,
+    exception_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    explanation TEXT NOT NULL,
+    candidate_matches TEXT NOT NULL,
+    status TEXT NOT NULL,
+    human_resolution TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reconciliation_ground_truth (
+    source_record_id TEXT PRIMARY KEY,
+    true_target_record_id TEXT,
+    expected_status TEXT NOT NULL,
+    scenario_type TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS disputes
+ (
     dispute_id   TEXT PRIMARY KEY,
     order_id     TEXT NOT NULL,
     customer_id  TEXT NOT NULL,
@@ -184,7 +240,7 @@ def init_schema() -> None:
 def wipe_all_tables() -> None:
     tables = [
         "audit_log", "human_attestations", "verdicts", "claims", "disputes",
-        "tally_ledger", "shiprocket_shipments", "shopify_orders", "razorpay_payments",
+        "reconciliation_ground_truth", "reconciliation_exceptions", "reconciliation_records", "reconciliation_batches", "tally_ledger", "shiprocket_shipments", "shopify_orders", "razorpay_payments",
     ]
     with get_conn() as conn:
         for t in tables:

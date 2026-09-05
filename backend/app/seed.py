@@ -389,6 +389,11 @@ def seed_database() -> None:
                     "VALUES (?,?,?,?,?,?,?)",
                     (c["claim_id"], d["dispute_id"], c["claim_type"], c["asserted_value"],
                      c["cited_source"], c["cited_record"], c["confidence"]))
+        
+        # Inject our dedicated reconciliation batch
+        from datetime import datetime as dt
+        from .seed_reconciliation import generate_reconciliation_batch
+        generate_reconciliation_batch(conn, dt.utcnow())
 
 
 if __name__ == "__main__":

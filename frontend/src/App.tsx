@@ -4,6 +4,7 @@ import Docket from './pages/Docket'
 import DisputeDetail from './pages/DisputeDetail'
 import EvaluationPage from './pages/EvaluationPage'
 import ChaosLabPage from './pages/ChaosLabPage'
+import ReconcilePage from './pages/ReconcilePage'
 import ActivityTicker from './components/ActivityTicker'
 import { api } from './lib/api'
 
@@ -34,6 +35,12 @@ export default function App() {
               className={`transition-colors ${location.pathname === '/' ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
               Docket
+            </Link>
+            <Link
+              to="/reconcile"
+              className={`transition-colors ${location.pathname === '/reconcile' ? 'text-ink' : 'text-muted hover:text-ink'}`}
+            >
+              Reconcile
             </Link>
             <Link
               to="/chaos"
@@ -72,6 +79,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Docket />} />
           <Route path="/dispute/:id" element={<DisputeDetail />} />
+          <Route path="/reconcile" element={<ReconcilePage />} />
           <Route path="/chaos" element={<ChaosLabPage />} />
           <Route path="/evaluation" element={<EvaluationPage />} />
         </Routes>
