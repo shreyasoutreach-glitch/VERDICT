@@ -13,8 +13,8 @@ export default function ReconcilePage() {
       const b = await api.getLatestBatch()
       if (b) {
         setBatch(b)
-        const recs = await api.getReconciliationRecords(b.batch_id)
-        setRecords(recs)
+        const recs: any = await api.getReconciliationRecords(b.batch_id)
+        setRecords(recs.records || recs)
         const excs = await api.getReconciliationExceptions(b.batch_id)
         setExceptions(excs)
       }
