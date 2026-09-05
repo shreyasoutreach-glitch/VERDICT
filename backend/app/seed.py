@@ -339,7 +339,7 @@ def build_world():
 
 
 def seed_database() -> None:
-    db.wipe_all_tables()
+    """Seed all world data and reconciliation ground truth."""
     disputes, rp_rows, shop_rows, ship_rows, ledger_rows = build_world()
 
     with db.get_conn() as conn:
@@ -390,10 +390,12 @@ def seed_database() -> None:
                     (c["claim_id"], d["dispute_id"], c["claim_type"], c["asserted_value"],
                      c["cited_source"], c["cited_record"], c["confidence"]))
         
-        # Inject our dedicated reconciliation batch
-        from datetime import datetime as dt
-        from .seed_reconciliation import generate_reconciliation_batch
-        generate_reconciliation_batch(conn, dt.utcnow())
+        # Inject our dedicated reconciliation batch only if not already present
+        existing = conn.execute("SELECT COUNT(*) AS n FROM razorpay_payments WHERE payment_id LIKE 'pay_REC%'").fetchone()['n']
+        if existing == 0:
+            from datetime import datetime as dt
+            from .seed_reconciliation import generate_reconciliation_batch
+            generate_reconciliation_batch(conn, dt.utcnow())
 
 
 if __name__ == "__main__":

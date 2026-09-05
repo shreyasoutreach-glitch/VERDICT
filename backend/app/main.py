@@ -30,6 +30,8 @@ def _bootstrap() -> None:
     if count == 0:
         seed.seed_database()
         pipeline.verify_all()
+        from .reconciler import run_reconciliation_batch
+        run_reconciliation_batch()
 
 
 @app.on_event("startup")
@@ -171,8 +173,12 @@ def inject_contradiction(order_id: str, body: ChaosInjectRequest):
 
 @app.post("/api/reset-demo")
 def reset_demo():
+    from . import db
+    from .reconciler import run_reconciliation_batch
+    db.wipe_all_tables()
     seed.seed_database()
     pipeline.verify_all()
+    run_reconciliation_batch()
     return {"reset": True, "time": datetime.now(timezone.utc).isoformat()}
 
 
