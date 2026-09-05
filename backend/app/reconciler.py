@@ -71,7 +71,7 @@ def run_reconciliation_batch() -> str:
     batch_id = f"BATCH-{str(uuid.uuid4())[:8].upper()}"
     
     with db.get_conn() as conn:
-        payments = [db.row_to_dict(r) for r in conn.execute("SELECT * FROM razorpay_payments")]
+        payments = [db.row_to_dict(r) for r in conn.execute("SELECT * FROM razorpay_payments WHERE payment_id LIKE 'pay_REC%'").fetchall()]
         ledgers = [db.row_to_dict(r) for r in conn.execute("SELECT * FROM tally_ledger")]
         
     records = []
